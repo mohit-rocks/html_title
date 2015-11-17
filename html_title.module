@@ -1,0 +1,83 @@
+<?php
+
+/**
+ * @file
+ * This module enables limited HTML to be used in node titles. It strips title
+ * markup from RSS feeds to eliminate unsightly markup in feed readers.
+ */
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Render\Element;
+use Drupal\node\Entity\Node;
+use Drupal\Component\Utility\Xss;
+
+/**
+ * Implementation of hook_theme_registry_alter()
+ */
+function html_title_theme_registry_alter(&$theme_registry) {
+  // Re-order search result pre-processing so ours always runs last
+  /*if ( \Drupal::moduleHandler()->moduleExists('search') && is_array($theme_registry['search_result']['preprocess functions'])) {
+    foreach($theme_registry['search_result']['preprocess functions'] as $value) {
+      if ($value != 'html_title_preprocess_search_result') {
+        $callbacks[] = $value;
+      }
+    }
+    $callbacks[] = 'html_title_preprocess_search_result';
+    $theme_registry['search_result']['preprocess functions'] = $callbacks;
+  }*/
+}
+
+/**
+ * Implementation of hook_preprocess_page()
+ */
+function html_title_preprocess_page(&$variables) {
+  if ($node = \Drupal::routeMatch()->getParameter('node')) {
+    $variables['node'] = $node;
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = $variables['node'];
+    $config = \Drupal::config('html_title.settings');
+    $elements = $config->get('html_title_allowed_elements');
+    $variables['title'] = Xss::filter($node->getTitle(), $elements);
+  }
+}
+/**
+ * Implementation of template_preprocess_node()
+ */
+function html_title_preprocess_node(&$variables) {
+  $variables['node'] = $variables['elements']['#node'];
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $variables['node'];
+  switch ($variables['view_mode']) {
+    case 'search_index':
+    case 'rss':
+      return;
+    default:
+      $config = \Drupal::config('html_title.settings');
+      $elements = $config->get('html_title_allowed_elements');
+      $variables['label'] = Xss::filter($node->getTitle(), $elements);
+      unset($variables['elements']['title']);
+  }
+}
+
+/**
+ * Implementation of hook_preprocess_search_result()
+ */
+function html_title_preprocess_search_result(&$vars) {
+  if (isset($vars['result']['title'])) {
+    $config = \Drupal::config('html_title.settings');
+    $elements = $config->get('html_title_allowed_elements');
+    $vars['title'] = Xss::filter($vars['result']['title'], $elements);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view().
+ */
+function html_title_node_view(array &$build, \Drupal\Node\Entity\Node $node, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+  switch ($view_mode) {
+    case 'rss':
+      $title = strip_tags($node->getTitle());
+      // @todo: Change title of node when there is RSS display type.
+      break;
+  }
+}
