@@ -10,6 +10,7 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Render\Element;
 use Drupal\node\Entity\Node;
 use Drupal\Component\Utility\Xss;
+use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Implementation of hook_theme_registry_alter()
@@ -37,7 +38,8 @@ function html_title_preprocess_page(&$variables) {
     $node = $variables['node'];
     $config = \Drupal::config('html_title.settings');
     $elements = $config->get('html_title_allowed_elements');
-    $variables['title'] = Xss::filter($node->getTitle(), $elements);
+    //$variables['title'] = Xss::filter($node->getTitle(), $elements);
+    unset($variables['title']);
   }
 }
 /**
@@ -54,7 +56,14 @@ function html_title_preprocess_node(&$variables) {
     default:
       $config = \Drupal::config('html_title.settings');
       $elements = $config->get('html_title_allowed_elements');
-      $variables['label'] = Xss::filter($node->getTitle(), $elements);
+      if ($variables['view_mode'] == 'full' && isset($variables['content']['title'])) {
+        // @todo, find a way to deal with titles on full page views now that
+        // the title is in a block.
+        // $variables['content']['title']['#printed'] = FALSE;
+      }
+      $elements = array('i');
+      $variables['label'] = SafeMarkup::format($node->getTitle(), $elements);
+      // $variables['content']['title'] = 'hi'. Xss::filterAdmin($node->getTitle());
       unset($variables['elements']['title']);
   }
 }
@@ -80,4 +89,36 @@ function html_title_node_view(array &$build, \Drupal\Node\Entity\Node $node, Ent
       // @todo: Change title of node when there is RSS display type.
       break;
   }
+}
+
+/**
+ * Implements hook_entity_prepare_view().
+ */
+function html_title_entity_prepare_view($entity_type_id, array $entities, array $displays, $view_mode) {
+  if ($entity_type_id !== 'node') {
+    return;
+  }
+  // @todo, this is only required because template_preprocess_node assumes there
+  // is a key inside the renderable array inside the elements array:
+  // $variables['label'] = $variables['elements']['title'];
+  // Since it can be display configured to be removed, it disappaers from the
+  // elements list. We must reinstate if it has been hidden from display.
+  // The alternative is a core patch or an alt implementation, perhaps involving
+  // a new extra field?
+  foreach ($entities as $entity) {
+    $display = $displays[$entity->bundle()];
+    if (!$display->getComponent('title')) {
+      $fields = \Drupal::entityManager()->getFieldDefinitions($entity_type_id, $entity->bundle());
+      $options = $fields['title']->getDisplayOptions('view');
+      $built_title = \Drupal::service('plugin.manager.field.formatter')->prepareConfiguration($fields['title']->getType(), $options);
+      $display->setComponent('title', $built_title);
+    }
+  }
+}
+
+/**
+ * Implements hook_node_view_alter().
+ */
+function html_title_node_view_alter(&$build, \Drupal\Node\Entity\Node $node, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+  // var_dump($build);
 }
