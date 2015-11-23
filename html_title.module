@@ -61,9 +61,8 @@ function html_title_preprocess_node(&$variables) {
         // the title is in a block.
         // $variables['content']['title']['#printed'] = FALSE;
       }
-      $elements = array('i');
+      array_unique($elements);
       $variables['label'] = SafeMarkup::format($node->getTitle(), $elements);
-      // $variables['content']['title'] = 'hi'. Xss::filterAdmin($node->getTitle());
       unset($variables['elements']['title']);
   }
 }
