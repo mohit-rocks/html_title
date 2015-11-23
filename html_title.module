@@ -9,7 +9,6 @@
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Render\Element;
 use Drupal\node\Entity\Node;
-use Drupal\Component\Utility\Xss;
 use Drupal\Component\Utility\SafeMarkup;
 
 /**
@@ -29,17 +28,17 @@ function html_title_theme_registry_alter(&$theme_registry) {
 }
 
 /**
- * Implementation of hook_preprocess_page()
+ * Implementation of hook_preprocess_page_title()
  */
-function html_title_preprocess_page(&$variables) {
+function html_title_preprocess_page_title(&$variables) {
   if ($node = \Drupal::routeMatch()->getParameter('node')) {
     $variables['node'] = $node;
     /** @var \Drupal\node\NodeInterface $node */
     $node = $variables['node'];
     $config = \Drupal::config('html_title.settings');
     $elements = $config->get('html_title_allowed_elements');
-    //$variables['title'] = Xss::filter($node->getTitle(), $elements);
-    unset($variables['title']);
+    array_unique($elements);
+    $variables['title'] = SafeMarkup::format($node->getTitle(), $elements);
   }
 }
 /**
@@ -74,7 +73,8 @@ function html_title_preprocess_search_result(&$vars) {
   if (isset($vars['result']['title'])) {
     $config = \Drupal::config('html_title.settings');
     $elements = $config->get('html_title_allowed_elements');
-    $vars['title'] = Xss::filter($vars['result']['title'], $elements);
+    array_unique($elements);
+    $vars['title'] = SafeMarkup::format($vars['result']['title'], $elements);
   }
 }
 
@@ -113,11 +113,4 @@ function html_title_entity_prepare_view($entity_type_id, array $entities, array 
       $display->setComponent('title', $built_title);
     }
   }
-}
-
-/**
- * Implements hook_node_view_alter().
- */
-function html_title_node_view_alter(&$build, \Drupal\Node\Entity\Node $node, EntityViewDisplayInterface $display, $view_mode, $langcode) {
-  // var_dump($build);
 }
