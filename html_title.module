@@ -37,7 +37,7 @@ function html_title_preprocess_page_title(&$variables) {
     $node = $variables['node'];
     $config = \Drupal::config('html_title.settings');
     $elements = $config->get('html_title_allowed_elements');
-    array_unique($elements);
+    $elements = array_unique($elements);
     $variables['title'] = SafeMarkup::format($node->getTitle(), $elements);
   }
 }
@@ -60,7 +60,7 @@ function html_title_preprocess_node(&$variables) {
         // the title is in a block.
         // $variables['content']['title']['#printed'] = FALSE;
       }
-      array_unique($elements);
+      $elements = array_unique($elements);
       $variables['label'] = SafeMarkup::format($node->getTitle(), $elements);
       unset($variables['elements']['title']);
   }
