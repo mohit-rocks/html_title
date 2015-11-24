@@ -16,7 +16,7 @@ use Drupal\Component\Utility\SafeMarkup;
  */
 function html_title_theme_registry_alter(&$theme_registry) {
   // Re-order search result pre-processing so ours always runs last
-  /*if ( \Drupal::moduleHandler()->moduleExists('search') && is_array($theme_registry['search_result']['preprocess functions'])) {
+  if ( \Drupal::moduleHandler()->moduleExists('search') && is_array($theme_registry['search_result']['preprocess functions'])) {
     foreach($theme_registry['search_result']['preprocess functions'] as $value) {
       if ($value != 'html_title_preprocess_search_result') {
         $callbacks[] = $value;
@@ -24,7 +24,7 @@ function html_title_theme_registry_alter(&$theme_registry) {
     }
     $callbacks[] = 'html_title_preprocess_search_result';
     $theme_registry['search_result']['preprocess functions'] = $callbacks;
-  }*/
+  }
 }
 
 /**
@@ -70,11 +70,14 @@ function html_title_preprocess_node(&$variables) {
  * Implementation of hook_preprocess_search_result()
  */
 function html_title_preprocess_search_result(&$vars) {
+  $config = \Drupal::config('html_title.settings');
+  $elements = $config->get('html_title_allowed_elements');
+  $elements = array_values(array_unique($elements));
   if (isset($vars['result']['title'])) {
-    $config = \Drupal::config('html_title.settings');
-    $elements = $config->get('html_title_allowed_elements');
-    array_unique($elements);
     $vars['title'] = SafeMarkup::format($vars['result']['title'], $elements);
+  }
+  if (isset($vars['result']['snippet'])) {
+    $vars['snippet'] = SafeMarkup::format($vars['result']['snippet']['#markup'], $elements);
   }
 }
 
