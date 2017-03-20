@@ -84,7 +84,7 @@ function html_title_preprocess_search_result(&$vars) {
 /**
  * Implements hook_ENTITY_TYPE_view().
  */
-function html_title_node_view(array &$build, \Drupal\Node\Entity\Node $node, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+function html_title_node_view(array &$build, \Drupal\Node\Entity\Node $node, EntityViewDisplayInterface $display, $view_mode) {
   switch ($view_mode) {
     case 'rss':
       $title = strip_tags($node->getTitle());

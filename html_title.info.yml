@@ -4,4 +4,4 @@ description: 'Enables limited HTML markup in node titles.'
 package: Access control
 version: VERSION
 core: 8.x
-configure: restrict_role_login_by_ip.settings
+configure: html_title.settings
